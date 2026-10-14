@@ -107,7 +107,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          sed "s/__VERSION__/${RELEASE_TAG#v}/g" .github/RELEASE_NOTES.md > "$RUNNER_TEMP/release-notes.md"
+          sed -e "s/__VERSION__/${RELEASE_TAG#v}/g" -e "s/__COMMIT__/$GITHUB_SHA/g" .github/RELEASE_NOTES.md > "$RUNNER_TEMP/release-notes.md"
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > "$RUNNER_TEMP/is-draft" 2>/dev/null; then
             if grep -qx false "$RUNNER_TEMP/is-draft"; then
               printf '该标签已发布，跳过重复发布。\n'
