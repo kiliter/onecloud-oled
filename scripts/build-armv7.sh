@@ -4,6 +4,9 @@ set -eu
 project_dir=$(cd "$(dirname "$0")/.." && pwd)
 cd "$project_dir"
 
+# 先由调用者创建顶层目录，避免 Linux 上由 Docker root 创建后无法写入。
+mkdir -p target
+
 # 在 Docker 中安装交叉编译目标，不修改电脑上的 Rust 工具链。
 docker run --rm \
     --mount "type=bind,src=$project_dir,dst=/work" \
