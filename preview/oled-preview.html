@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One-KVM · OLED 两页轮播预览</title>
+<style>
+:root{--page:#edf2f5;--paper:#fff;--ink:#1d3443;--muted:#627583;--line:#d4e0e6;--blue:#2862b7;--pale:#eaf2ff;--board:#355a69;--amber:#946020;--sans:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.6}button,input,select{font:inherit}button{cursor:pointer}button,input,select{accent-color:var(--blue)}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #2862b7;outline-offset:4px}a{color:var(--blue)}.shell{max-width:1240px;margin:auto;padding:26px 32px 30px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line);padding-bottom:17px}.brand{font-family:var(--mono);font-size:19px;font-weight:700;letter-spacing:-.7px}.brand span{font-family:var(--sans);font-size:12px;font-weight:400;letter-spacing:0;margin-left:13px;padding-left:13px;border-left:1px solid var(--line)}.spec{font:12px var(--mono);color:var(--muted)}h1{margin:25px 0 5px;font-size:29px;font-weight:650;letter-spacing:-.8px}.intro{color:var(--muted);margin:0 0 23px}.workbench{display:grid;grid-template-columns:265px minmax(0,1fr);border:1px solid var(--line);border-radius:15px;background:var(--paper);overflow:hidden}.controls{padding:24px;border-right:1px solid var(--line)}.controls h2{margin:0 0 19px;font-size:15px}.field{margin-bottom:21px}.label{display:block;font-size:12px;font-weight:600;margin-bottom:7px}.input{width:100%;padding:9px 11px;border:1px solid #c7d6df;background:#fbfdfe;border-radius:7px;color:var(--ink)}.mono{font-family:var(--mono)}.field-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.preset{background:var(--pale);color:var(--blue);border:0;border-radius:5px;padding:5px 8px;font-size:11px;margin-top:8px}.checkbox{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:11px}.checkbox input{width:15px;height:15px;margin:0}.hint{font-size:11px;color:var(--muted);margin-top:6px}.error{font-size:11px;color:var(--amber);margin:6px 0 0;min-height:17px}.scale{display:block;width:100%;margin-top:10px}.stage{padding:23px 28px 20px;min-width:0;background:radial-gradient(ellipse at 50% 35%,#f8fbfc,#eef4f7)}.stage-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:17px}.stage-title h2{margin:0;font-size:14px}.badge{font-size:11px;border-radius:4px;background:#dce9e7;color:#355e52;padding:3px 7px}.preview-scroll{max-width:100%;overflow:auto;padding:8px 0 12px}.device{--zoom:4;position:relative;width:max-content;margin:auto;padding:25px 29px 22px;background:var(--board);border:1px solid #28434e;border-radius:9px;box-shadow:0 14px 28px #1f465c24,inset 0 1px #5c7b88}.device:before,.device:after{content:"";position:absolute;top:9px;width:8px;height:8px;border:2px solid #c7d2d7;border-radius:50%;background:#ecf2f4}.device:before{left:9px}.device:after{right:9px}.screen{position:relative;line-height:0;background:#000;border:6px solid #18272d;border-radius:3px}.oled{display:block;width:calc(128px * var(--zoom));height:calc(64px * var(--zoom));image-rendering:pixelated;image-rendering:crisp-edges;background:#000}.screen.grid:after{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(to right,#86bed833 1px,transparent 1px),linear-gradient(to bottom,#86bed833 1px,transparent 1px);background-size:calc(1px * var(--zoom)) calc(1px * var(--zoom))}.board-label{display:flex;justify-content:space-between;color:#d8e7ed;font:10px var(--mono);letter-spacing:1px;margin-top:13px}.stage-note{text-align:center;font-size:11px;color:var(--muted);margin:9px 0 0}.result{display:flex;gap:12px;align-items:start;padding-top:17px;margin-top:16px;border-top:1px solid #d4e0e6}.status-dot{width:7px;height:7px;border-radius:50%;background:#478073;flex-shrink:0;margin-top:7px}.result.warning .status-dot{background:var(--amber)}.result strong{font-size:13px}.result p{margin:3px 0 0;color:var(--muted);font-size:12px}.compare-title{display:flex;justify-content:space-between;align-items:baseline;margin:25px 0 13px}.compare-title h2{font-size:15px;margin:0}.compare-title span{font-size:12px;color:var(--muted)}.plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.plan{position:relative;text-align:left;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:15px 13px 13px;color:var(--ink);transition:border-color .15s,box-shadow .15s;min-width:0}.plan:hover{border-color:#90acbe}.plan[aria-pressed=true]{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}.plan-title{display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:13px;gap:6px;margin-bottom:11px}.selected-mark{display:none;font-size:11px;color:var(--blue)}.plan[aria-pressed=true] .selected-mark{display:inline}.plan canvas{display:block;width:100%;max-width:256px;aspect-ratio:2/1;image-rendering:pixelated;background:#000;margin:auto}.plan-desc{font-size:11px;color:var(--muted);margin:11px 0 4px;min-height:18px}.plan-fit{font-size:11px;color:#386e5d;display:block}.plan-fit.warn{color:var(--amber)}.foot{display:flex;justify-content:space-between;align-items:flex-start;gap:30px;margin-top:21px;color:var(--muted);font-size:11px}.native{display:flex;align-items:center;gap:12px}.native canvas{display:block;width:128px;height:64px;flex:none;background:#000;image-rendering:pixelated}.foot-note{max-width:440px;margin:0}details{margin-top:18px;border-top:1px solid var(--line);padding-top:12px;font-size:11px;color:var(--muted)}summary{cursor:pointer;width:fit-content}#params{font:12px/1.8 var(--mono);white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:6px;padding:13px;color:var(--ink)}.source{margin-top:10px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+@media(max-width:1000px){.shell{padding:22px}.workbench{grid-template-columns:235px minmax(0,1fr)}.controls{padding:20px}.stage{padding:20px 16px}.device{--zoom:3;padding:23px 22px 18px}.plans{grid-template-columns:repeat(2,minmax(0,1fr))}.plan canvas{max-width:256px}.foot{gap:20px}}
+@media(max-width:700px){.shell{padding:17px 14px}.topbar{align-items:start}.brand span{display:block;border:0;margin:3px 0 0;padding:0}.spec{text-align:right;font-size:10px;padding-top:5px}h1{font-size:25px;margin-top:20px}.intro{font-size:12px}.workbench{grid-template-columns:1fr}.controls{border-right:0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;padding:18px}.controls h2{grid-column:1/-1;margin-bottom:6px}.field{margin-bottom:4px;min-width:0}.stage{padding:18px 12px}.device{--zoom:2;padding:22px 16px 17px}.stage-title{gap:5px}.stage-title h2{font-size:13px}.stage-note{font-size:10px}.foot{flex-direction:column;gap:15px}.compare-title span{font-size:10px}.plan{padding:12px 9px}.plan-title{font-size:12px}.plan-desc{min-height:36px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.page-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.page-tabs{display:flex;gap:5px;padding:4px;background:#e3ebf0;border-radius:7px}.page-button,.play-button{border:0;background:transparent;border-radius:5px;padding:7px 11px;color:var(--muted);font-size:12px}.page-button[aria-pressed=true]{background:#fff;color:var(--blue);box-shadow:0 1px 3px #243f5415}.play-button{border:1px solid #c6d6df;background:#fff;color:var(--ink)}.play-button[aria-pressed=true]{background:var(--pale);border-color:#a7bfd9;color:var(--blue)}.timing{display:flex;align-items:center;gap:10px;max-width:570px;margin:14px auto 0;font-size:11px;color:var(--muted)}.progress-track{flex:1;height:3px;border-radius:3px;background:#cedee6;overflow:hidden}.progress-fill{height:100%;width:0;background:var(--blue)}.page-settings{margin:8px 0 0}.page-settings summary{font-weight:600;font-size:12px;color:var(--ink)}.settings-body{padding-top:14px}.duration-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:13px 0}.duration-row .input{padding:7px}.settings-body .label{font-size:11px}.bot-card{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:28px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px;margin-top:20px}.bot-card canvas{display:block;width:256px;height:128px;image-rendering:pixelated;background:#000}.bot-copy h2{font-size:15px;margin:0 0 5px}.bot-copy p{font-size:12px;margin:0 0 10px;color:var(--muted)}.bot-copy .preset{font-size:12px;margin:0}.foot-note{max-width:480px}.error:empty{display:none}.field{margin-bottom:17px}.controls h2{margin-bottom:15px}
+@media(max-width:700px){.page-nav{gap:5px}.page-button,.play-button{font-size:11px;padding:7px 9px}.page-settings{grid-column:1/-1}.settings-body{display:grid;grid-template-columns:1fr 1fr;gap:13px}.settings-body .checkbox{margin:0}.duration-row{grid-column:1/-1;margin:0}.settings-body .field{margin:0}.bot-card{grid-template-columns:1fr;padding:17px;gap:14px}.bot-card canvas{width:256px;height:128px;margin:auto}.foot-note{max-width:none}.timing{font-size:10px}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="topbar"><div class="brand">One-KVM<span>OLED 两页轮播预览</span></div><div class="spec">SSD1306 / 128 × 64 / 0.96″</div></header>
+  <h1>看完信息，再和 Bot 打个照面。</h1>
+  <p class="intro">第一页是居中的大字信息，第二页是 Grok Bot 风格的点阵动画。自动轮播，带一个小转场。</p>
+  <section class="workbench" aria-label="OLED 预览与设置">
+    <aside class="controls">
+      <h2>预览内容</h2>
+      <div class="field"><label class="label" for="ip">设备 IP</label><input class="input mono" id="ip" value="192.168.1.100" inputmode="decimal" maxlength="39" spellcheck="false" aria-describedby="ip-error"><button class="preset" id="long-ip" type="button">试试最长 IPv4</button><p class="error" id="ip-error" aria-live="polite"></p></div>
+      <div class="field"><label class="label" for="time">显示时间</label><input class="input mono" id="time" value="12:34:56" maxlength="8" spellcheck="false" aria-describedby="time-error"><label class="checkbox"><input id="live" type="checkbox" checked>时间每 2 秒更新</label><p class="error" id="time-error" aria-live="polite"></p></div>
+      <div class="field"><label class="label" for="alignment">第一页文字对齐</label><select class="input" id="alignment"><option value="left">左对齐</option><option value="center" selected>居中对齐</option></select></div>
+      <div class="field"><div class="field-row"><label class="label" for="scale">预览放大</label><output class="mono" id="scale-value" for="scale">4×</output></div><input class="scale" id="scale" type="range" min="1" max="6" step="1" value="4"><label class="checkbox"><input id="grid" type="checkbox">显示像素网格</label><div class="hint">放大预览不会增加屏幕像素。</div></div>
+      <details class="page-settings"><summary>轮播与 Bot 设置</summary><div class="settings-body">
+        <label class="checkbox"><input id="auto-loop" type="checkbox" checked>自动切换两页</label>
+        <div class="duration-row"><div><label class="label" for="info-seconds">信息页停留</label><select class="input" id="info-seconds"><option value="4">4 秒</option><option value="6" selected>6 秒</option><option value="8">8 秒</option><option value="10">10 秒</option></select></div><div><label class="label" for="bot-seconds">动画页停留</label><select class="input" id="bot-seconds"><option value="2">2 秒</option><option value="4" selected>4 秒</option><option value="6">6 秒</option><option value="8">8 秒</option></select></div></div>
+        <div class="field"><label class="label" for="transition">切页效果</label><select class="input" id="transition"><option value="slide">向左滑动</option><option value="dissolve">像素溶解</option><option value="none">直接切换</option></select></div>
+        <div class="field"><label class="label" for="bot-expression">Bot 表情</label><select class="input" id="bot-expression"><option value="auto">自动变化</option><option value="idle">待机眨眼</option><option value="happy">开心</option><option value="thinking">思考</option><option value="surprised">惊讶</option></select></div>
+      </div></details>
+    </aside>
+    <div class="stage">
+      <div class="stage-title"><h2 id="active-title">第 1 页 · 大字分层</h2><span class="badge">128 × 64 黑白点阵</span></div>
+      <div class="page-nav"><div class="page-tabs" aria-label="手动切换页面"><button class="page-button" type="button" id="page-info" aria-pressed="true">1 · 信息页</button><button class="page-button" type="button" id="page-bot" aria-pressed="false">2 · Bot 动画</button></div><button class="play-button" type="button" id="playback-toggle" aria-pressed="false">暂停播放</button></div>
+      <div class="preview-scroll"><div class="device" id="device"><div class="screen" id="screen"><canvas class="oled" id="main-screen" width="128" height="64" role="img" aria-label="OLED 当前布局预览"></canvas></div><div class="board-label"><span>ONE-KVM</span><span>128 × 64</span></div></div></div>
+      <div class="timing"><span id="page-caption">信息页 · 停留 6 秒</span><div class="progress-track" aria-hidden="true"><div class="progress-fill" id="page-progress"></div></div><span id="page-countdown">6.0 秒后切页</span></div>
+      <p class="stage-note" id="stage-note">标题和时间用大字，IP 用稍小粗体；三行居中。</p>
+      <div class="result" id="result" aria-live="polite"><span class="status-dot"></span><div><strong id="result-title"></strong><p id="result-detail"></p></div></div>
+    </div>
+  </section>
+  <div class="compare-title"><h2>第一页 · 选择字号</h2><span>第一项保留当前小字，点击可对比</span></div>
+  <div class="plans" id="plans">
+    <button class="plan" type="button" data-plan="current" aria-pressed="false"><span class="plan-title">当前小字<span class="selected-mark">已选</span></span><canvas width="128" height="64" data-screen="current" aria-hidden="true"></canvas><p class="plan-desc">三行均为 6 × 10</p><span class="plan-fit" data-fit="current"></span></button>
+    <button class="plan" type="button" data-plan="bold" aria-pressed="false"><span class="plan-title">三行粗体<span class="selected-mark">已选</span></span><canvas width="128" height="64" data-screen="bold" aria-hidden="true"></canvas><p class="plan-desc">三行均为 8 × 13 粗体</p><span class="plan-fit" data-fit="bold"></span></button>
+    <button class="plan" type="button" data-plan="mixed" aria-pressed="true"><span class="plan-title">大字分层<span class="selected-mark">已选</span></span><canvas width="128" height="64" data-screen="mixed" aria-hidden="true"></canvas><p class="plan-desc">标题 / 时间 10 × 20，IP 8 × 13 粗体</p><span class="plan-fit" data-fit="mixed"></span></button>
+    <button class="plan" type="button" data-plan="large" aria-pressed="false"><span class="plan-title">三行大字<span class="selected-mark">已选</span></span><canvas width="128" height="64" data-screen="large" aria-hidden="true"></canvas><p class="plan-desc">三行均为 10 × 20</p><span class="plan-fit" data-fit="large"></span></button>
+  </div>
+  <section class="bot-card" aria-label="第二页 Bot 动画"><canvas width="128" height="64" id="bot-preview" role="img" aria-label="圆润的点阵 Bot 正在眨眼和变换表情"></canvas><div class="bot-copy"><h2>第二页 · Bot 动画</h2><p>圆润形变、胶囊眼睛、眨眼、左右看，再轻轻弹一下。所有动作都绘制在黑白像素上。</p><button class="preset" type="button" id="show-bot">立即看第二页</button></div></section>
+  <footer class="foot"><div class="native"><canvas width="128" height="64" id="native-screen" role="img" aria-label="未放大的两页轮播预览"></canvas><span>原始 128 × 64 像素<br>这里没有放大</span></div><p class="foot-note">默认：信息页 6 秒 → 滑动转场 → Bot 动画 4 秒 → 返回信息页。Rust v1.0.0 已实现默认的大字居中与两页轮播。此页的其他选项用于对比，实物动画速度以设备为准。</p></footer>
+  <details><summary>查看信息页的字体与行位置</summary><pre id="params"></pre><p>Rust v1.0.0 使用默认大字分层居中布局；其他参数可供调整时参考。字体与脚本均内嵌，保存此 HTML 后可离线打开。</p><p class="source">字体来自 <a href="https://docs.rs/embedded-graphics/0.8.2/embedded_graphics/mono_font/ascii/" target="_blank" rel="noopener noreferrer">embedded-graphics 0.8.2 ASCII 字体</a>的原始点阵数据。Bot 参考 <a href="https://x.ai/bot" target="_blank" rel="noopener noreferrer">Grok Bot 官方页面</a>的视觉风格，以几何计算绘制黑白点阵动画。</p></details>
+</main>
+<script>
+// 字体来源：embedded-graphics 0.8.2 fonts/raw/ascii，16 个字形一行，最高位在前。
+const FONT_DATA = {"small":{"w":6,"h":10,"sheetWidth":96,"rust":"FONT_6X10","data":"AAAAAAAAAAAAAAAAAIUUISQIEQAAAAACAIUUcqoIIIiIAAACAIU+oUoIQEUIAAAEAIAUcIQAQE++A+AIAIA+KUqAQEUIAAAQAAAUcqkAIIiIMAIgAIAUIkaAEQAAIAcgAAAAAAAAAAAAQAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIIc+E+M+ccAACAQcUYiCMgQCiiIIEAIiioCEUsgEimccI+EEiIMMkysEcaIIQACIiIQC+CyIiCAAI+EIUIgiEiiQiEIMEAIAI++cEccQcYcICAQIAAAAAAAAAAIQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcI8c8++cicOigiiciUSiSggiiIEkgiiimiSgSgggiIEog2yiqicgS88g+IEwgqqis+SgSggmiIEogimigiSiSggiiIkkgiiici8c8+gcicYi+iicAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8c8c+iiiii+cgcIAiiiiIiiiiiCQgEUAiiigIiiiUUEQQEiA8i8cIiUqIIIQIEAAgioCIiUqUIQQEEAAgqkiIiU2iIgQCEAAgcicIcIiiI+cCcAAACAAAAAAAAAAAAA+AAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAEAgACAMAgICgYAAAAAgACASAgAAgIAAAAcscacQesYGiI0scACyimi8iyICkIqyiAeigi+QiiIC4IqiiAiyimgQeiICkIqiiAescacQCicSiciicAAAAAAAiAASAAAAAAAAAAAAcAAMAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAGIYScAAAAQAAAAAAIIEqisasc8iiiii+EIIkEymygQiiiUiEYIGAIiigcQiUqImIEIIAIymgCSmUqUaQIIEAAsag8MaIUiC+GIYAIgCAAAAAAAiAAAAAAgCAAAAAAAcAAAAAA"},"bold":{"w":8,"h":13,"sheetWidth":128,"rust":"FONT_8X13_BOLD","data":"AAAAAAAAAAAAAAAAAAAAAAAYbAAQ5gAYDGAAAAAAAAIAGGxsfKYAGBgwAAAAAAAGABhsbNbsABgwGBAYAAAABgAYbP7QGHgYMBgQGAAAAAwAGAD+8BjMAGAM/n4AAAAYABgAbHwwzABgDDh+AH4AMAAYAP4eMHgAYAw4GDwAAGAAAAD+Fm7OADAYbBgcABjAABgAbNbKzAAwGEQAHAA8wAAYAGx8zn4AGDAAABgAGIAAAAAAEAAAAAxgAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4GHz+DP48/nx8AAAAAAB8bDjGBhzAYAbGzgAABgBgxsZ4xgw8wMAGxsYYGAwAMMbGGAYYbPzADMbGPDwYABgGxhgMPMzm/Bh8zhgYMH4MDMYYGAbMBuYYxn4AAGAABhjGGDAG/gbGMMYGADwwAAwYxhhgBgwGxjDGBhgcGH4YAGwYwMYMxuYwxgw8HAwAMBg4fv58DHx8MHx4GBgGAGAYAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADj8fPz+/nzGPA7GwMbGfHx8ZuZmwMDGxhgGxsDGxsb+xmbGZsDAxsYYBszA7ubGzsZmwGbAwMDGGAbYwP7mxt7GfMBm+PjA/hgG8MDW9sbS/mbAZsDAwMYYBvDAxt7G0sZmwGbAwM7GGAbYwMbOxt7GZsZmwMDGxhjGzMDGzsbgxmbmZsDAxsYYxsbCxsbGfsb8fPz+wHzGPHzG/sbGfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPx8/Hx+xsbGxmb+fIB8EADGxsbGGMbGxsZmBmDADDgAxsbGxhjGxsZsZgZgwAxsAMbGxsAYxsbGbDwMYGAMxgDGxvx8GMZExjg8GGAwDAAA/Mb4BhjGbMY4GDBgGAwAAMDGzAYYxmzWbBhgYAwMAADAxszGGMY41mwYwGAGDAAAwN7GxhjGOP7GGMBgBgwAAMB8xnwYfBBsxhj+YAIMAAAABgAAAAAAAAAAAHwAfAD+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAMAABgA8AMAAAMA4AAAAGADAAAYAZgDAGAbAGAAAAAwAwAAGAGAAwBgGwBgAAAAAfNx8dnxgftwAAMwYbNx8AAbm5s7GYMzmOA7YGP7mxgB+xsDGxvzMxhgG8BjWxsYAxsbAxv5gzMYYBvAY1sbGAMbGwMbAYHjGGAbYGMbGxgDO5ubOxmDwxhgGzBjGxsYAdtx8dnxgfMY8xsY8xsZ8AAAAAAAAAMYAAMYAAAAAAAAAAAAAAAB8AAB8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAeGHgAfAAAAABgAAAAAAAAMBgMcsYAAAAAYAAAAAAAADAYDP7G3HbcfGDGxsbGxv4wGAycBubO5sb8xsbGxsYMGBgYAAzGxsBgYMbGxmzGGHAYDgAYxsbAOGDGxtY4xjAYGBgAGMbGwAxgxmzWbM5gMBgMAADmzsDGZs5s/sZ2wDAYDAAY3HbAfDx2OGzGBv4wGAwAGMAGAAAAAAAAAMYAHgB4AADABgAAAAAAAAB8AAAAAAAA"},"large":{"w":10,"h":20,"sheetWidth":160,"rust":"FONT_10X20","data":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDMAAMAAHAMAMMAAAAAAAAAAAAAwMwNj8OY2AwBgYAAAAAAAAABgADAzA2bZtjYDAMAwAAAAAAAAAGAAMBIDZsG8NgMAwDAzAwAAAAAAwAAwAA/2wOw8AgGAGDMDAAAAAADAADAABsbAGBgAAYAYHgMAAAAAAYAAMAAGw/AYOAABgBh/n+AB/gABgAAwAAbA2DBsAAGAGB4DAAAAAAMAADAAH+DYMGbAAYAYMwMAAAAAAwAAMAANgNhuY4AAwDAzAwAAAAAGAAAAAA2G2HtjAADAMAAAAAAADgYAADAADYPw23eAAGBgAAAA4AAODAAAMAAAAMDOPMAAMMAAAADgAA4MAAAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwDAeB4AR/h4f4eB4AAAAEAAgB4HgcDMMwDGAMwBjMMwAAAAwADAMwzDwYZhgcYBhAGYZhgAAAGAAGBhjMbBhmGDxgGAAxhmGAAAAwAAMGGYYMAGAYbGAYADGGYYAAAGB/gYYZhgwAYDDMbhuAYMxhg4DgwAAAwDGGDADA4YxzHMBgeDODgOGAAABgYYYMA4AxjAGYYMDMHYAAAMAAAMDBhgwGABn+AZhgwYYBgAAAYAABgMDMDAwGGAwBmGGBhgGAAAAwf4MAwMwMGAYYDGGYYYGGIYAAABgABgAAeAwYAzAMMwzDAMwzA4DgDAAMAMAwf5/h4AweB4MAeB4DgOAEAAgAwAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeAwfAeH4f5/h4YZ/g/YZgGGYYeDMHhmDMYxgGAMxhgwAxhmAYZxjMYYzGMYZhmAYBhmGDADGMYBznGYZnjMYxgGGYBgGAYYMAMYxgHOeZhm+YZjGAYZgGAYBhgwAxmGAf55mGbZhmYYBhmAYBgGGDADGYYBtm2YZtmGfhgGGfh+Gef4MAMfBgG2bZhm2f5jGAYZgGAYZhgwAxmGAbZnmGbxhmGYBhmAYBhmGDADGYYBtmeYZmGGYZgGGYBgGGYYMGMYxgGGY5hmAYZhmGYZgGAYZhgwYxjGAYZjmGMZhmMMxjGAYAzmGDA2GGYBhmGMwfGGfgeH4f5gB6YZ/hwYZ/mGYYeAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfgeH4Hh/mGYZhmGYZ/j8AA/AwABjDMYwzAwYZhmGYZhgGMAwAMHgAGGYZhmGDBhmGYYzDMAYwDAAwzAAYZhmGYAMGGYZhjMMwDDAGADGGABhmGYZgAwYYzGGHgeAYMAYAMAAAGGYZhjADBhjMbYeB4BgwAwAwAAAYxhmMHgMGGMxtgwDAMDADADAAAB+GGfgDAwYYeG2HgMBgMAGAMAAAGAYZmAGDBhh4bYeAwGAwAYAwAAAYBtmMAYMGGHhzjMDAwDAAwDAAABgGeYxhgwYYMHOMwMGAMADAMAAAGAMxhjMDAzAwYZhgwYAwAGAwAAAYAfGGHgMB4DBhmGDB/j8AY/AAAAAAGAAAAAAAAAAAAAAAAAAAAAB/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgABgAAAYAA8ABgAAABgDwAAAAADAAGAAABgAGYAGAAAAGADAAAAAAGAAYAAAGAAZgAYAMAGYAMAAAAAAAABgAAAYABgABgAwAZgAwAAAAAAAAGAAABgAGAAGAAAAGADAAAAAAAB8bgfB2Hh+D6bg8AeYwMFsbgeAAMZzDGM4zBgY5zAwAZmAwf5zDMAABmGYBhmGGBjGGDABmwDBtmGYYAD+YZgGGf4YGMYYMAGeAMG2YZhgAYZhmAYZgBgYxhgwAZ8AwbZhmGABhmGYBhmAGA+GGDABmYDBtmGYYAGGcwxjOMYYGAYYMAGYwMG2YYzAAPpuB8HYfBgPxhn+AZhn+bZhh4AAAAAAAAAAABhgAAAxgAAAAAAAAAAAAAAAAAAAGGAAADGAAAAAAAAAAAAAAAAAAAAYYAAAMYAAAAAAAAAAAAAAAAAAAA/AAAAfAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4MHgOYeAAAAAAAAAAAAAAAAAAAMAwDBtjMAAAAAAAYAAAAAAAAAAAwDAMGcYYAAAAAABgAAAAAAAAAADAMAwABhgAAAAAAGAAAAAAAAAAAMAwDAAGGbgdm8Px+GGYZhmGYY/gwDAMAAAxzDOOZhhgYZhmGMxhgGeAMAeAAGGGYYwGAGBhjMYYeGGAwMAwDAAAwYZhjAPwYGGMxtgwYYGAwDAMAADBhmGMABhgYYeG2DBhgwDAMAwAAMGGYYwAGGBhh4bYeGGGAMAwDAAAAcwzjAYYZjODB/jMM4wAwDAMAADBuB2MA/A8HYMDMYYdj+B4MHgAAMGAAYAAAAAAAAAAAAGAAAAAAAAAAYABgAAAAAAAAAAAYYAAAAAAAAABgAGAAAAAAAAAAAAzAAAAAAAAAAGAAYAAAAAAAAAAAB4AAAAAAAAAA"}};
+const FONTS = Object.fromEntries(Object.entries(FONT_DATA).map(([name,f]) => [name,{...f,bytes:Uint8Array.from(atob(f.data),c=>c.charCodeAt(0))}]));
+const PLANS = {
+  current:{name:'当前小字',fonts:['small','small','small'],ys:[0,20,40]},
+  bold:{name:'三行粗体',fonts:['bold','bold','bold'],ys:[3,25,47]},
+  mixed:{name:'大字分层',fonts:['large','bold','large'],ys:[0,24,44]},
+  large:{name:'三行大字',fonts:['large','large','large'],ys:[0,22,44]}
+};
+const $=id=>document.getElementById(id);
+let active='mixed';
+const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const playback={page:0,elapsed:0,botMs:0,transition:null,running:!reducedMotion};
+const expressionNames={idle:'待机眨眼',happy:'开心',thinking:'思考',surprised:'惊讶'};
+let infoFrame=null;
+function localTime(){const d=new Date();return [d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');}
+function glyphPixel(font,character,x,y){
+  let code=character.charCodeAt(0);if(code<32||code>127)code=63;
+  const index=code-32;
+  const sx=(index%16)*font.w+x, sy=Math.floor(index/16)*font.h+y;
+  const bit=sy*font.sheetWidth+sx;
+  return (font.bytes[bit>>3]>>(7-(bit&7)))&1;
+}
+function drawText(pixels,text,font,x,y){
+  for(const character of text){
+    for(let gy=0;gy<font.h;gy++)for(let gx=0;gx<font.w;gx++){
+      const px=x+gx,py=y+gy;
+      if(px>=0&&px<128&&py>=0&&py<64&&glyphPixel(font,character,gx,gy))pixels[py*128+px]=1;
+    }
+    x+=font.w;
+  }
+}
+function render(planId,original=false){
+  const plan=PLANS[planId],pixels=new Uint8Array(128*64);
+  const texts=['One-KVM',$('ip').value.trim()||'--',$('time').value.trim()||'--'];
+  const rows=texts.map((text,i)=>{
+    const font=FONTS[plan.fonts[i]],width=text.length*font.w;
+    const x=!original&&$('alignment').value==='center'&&width<=128?Math.floor((128-width)/2):0;
+    drawText(pixels,text,font,x,plan.ys[i]);
+    return {text,font,width,x,y:plan.ys[i]};
+  });
+  return {pixels,rows,overflow:rows.filter(r=>r.width>128||r.y+r.font.h>64)};
+}
+function paint(canvas,pixels){
+  const ctx=canvas.getContext('2d'),im=ctx.createImageData(128,64);
+  let hash=2166136261;
+  for(let i=0;i<pixels.length;i++){const v=pixels[i]?255:0;im.data[i*4]=v;im.data[i*4+1]=v;im.data[i*4+2]=v;im.data[i*4+3]=255;hash=Math.imul(hash^pixels[i],16777619);}
+  ctx.putImageData(im,0,0);
+  canvas.dataset.frameHash=(hash>>>0).toString(16);
+}
+// 在 128×64 像素上逐点计算轮廓；白色身体、黑色胶囊眼睛，不依赖图片素材。
+function renderBot(seconds,chosen='auto'){
+  const cycle=['idle','happy','thinking','surprised'];
+  const expression=chosen==='auto'?cycle[Math.floor(seconds/3)%cycle.length]:chosen;
+  const pixels=new Uint8Array(128*64);
+  const pulse=Math.sin(seconds*2.4),bob=Math.sin(seconds*1.8);
+  const kick=Math.max(0,Math.sin(seconds*1.8))**8;
+  const cx=64+Math.sin(seconds*.85)*1.5,cy=32+bob*1.1-kick*1.7;
+  const rx=24.5*(1+.035*pulse-.035*kick),ry=22.5*(1-.03*pulse+.05*kick);
+  const exponent=2.25+.85*(1+Math.sin(seconds*.65))/2;
+  const rotation=.12*Math.sin(seconds*1.05)-.05,co=Math.cos(rotation),si=Math.sin(rotation);
+  const gaze=expression==='thinking'?Math.sin(seconds*1.1)*3:Math.sin(seconds*.9)*1.4;
+  const gazeY=expression==='thinking'?-1.7:Math.sin(seconds*.7)*.6;
+  const blinkPhase=seconds%4.7,blink=Math.max(.08,Math.min(1,Math.abs(blinkPhase-3.65)/.13));
+  function eye(u,v,x,y,right){
+    const dx=u-x,dy=v-y,angle=.26+(expression==='thinking'?.1:0);
+    const ex=dx*Math.cos(angle)+dy*Math.sin(angle),ey=-dx*Math.sin(angle)+dy*Math.cos(angle);
+    if(expression==='happy')return Math.abs(ex)<=4.2&&Math.abs(ey-(-1.8+ex*ex*.14))<1.1;
+    const hw=expression==='surprised'?4:2.8,hh=(expression==='surprised'?6.7:(right?6.2:5.1))*blink;
+    const radius=Math.min(hw,hh),qx=Math.max(Math.abs(ex)-hw+radius,0),qy=Math.max(Math.abs(ey)-hh+radius,0);
+    return qx*qx+qy*qy<=radius*radius;
+  }
+  for(let y=0;y<64;y++)for(let x=0;x<128;x++){
+    const dx=x+.5-cx,dy=y+.5-cy,u=dx*co+dy*si,v=-dx*si+dy*co;
+    const angle=Math.atan2(v,u),edge=1+.035*Math.sin(angle*3+seconds*.5)+.025*Math.cos(angle);
+    const inside=(Math.abs(u/rx)**exponent+Math.abs(v/ry)**exponent)<=edge;
+    if(inside&&!eye(u,v,-8+gaze,-5+gazeY,false)&&!eye(u,v,6+gaze,-7+gazeY,true))pixels[y*128+x]=1;
+  }
+  return {pixels,expression};
+}
+function composeTransition(from,to,progress,effect){
+  const pixels=new Uint8Array(128*64),ease=progress*progress*(3-2*progress);
+  if(effect==='dissolve'){
+    for(let y=0;y<64;y++)for(let x=0;x<128;x++){
+      const i=y*128+x,rank=(((x&7)*37+(y&7)*19)%64)/64;
+      pixels[i]=rank<ease?to[i]:from[i];
+    }
+  }else{
+    const shift=Math.round(128*ease);
+    for(let y=0;y<64;y++)for(let x=0;x<128;x++){
+      const sx=x+shift;pixels[y*128+x]=sx<128?from[y*128+sx]:to[y*128+sx-128];
+    }
+  }
+  return pixels;
+}
+function holdDuration(page){return Number(page===0?$('info-seconds').value:$('bot-seconds').value)*1000;}
+function goToPage(page,animated=true){
+  if(page===playback.page&&!playback.transition){playback.elapsed=0;drawPlayback();return;}
+  const effect=$('transition').value;
+  if(animated&&playback.running&&!reducedMotion&&effect!=='none'){
+    playback.transition={from:playback.page,to:page,elapsed:0,effect};
+  }else{playback.page=page;playback.elapsed=0;playback.transition=null;}
+  drawPlayback();
+}
+function advancePlayback(delta){
+  playback.botMs+=delta;
+  if(playback.transition){
+    playback.transition.elapsed+=delta;
+    if(playback.transition.elapsed>=450){playback.page=playback.transition.to;playback.transition=null;playback.elapsed=0;}
+  }else{
+    playback.elapsed+=delta;
+    if($('auto-loop').checked&&playback.elapsed>=holdDuration(playback.page))goToPage(1-playback.page);
+  }
+}
+function drawPlayback(){
+  if(!infoFrame)return;
+  const bot=renderBot(playback.botMs/1000,$('bot-expression').value),transition=playback.transition;
+  const source=playback.page===0?infoFrame.pixels:bot.pixels;
+  let pixels=source;
+  if(transition){const from=transition.from===0?infoFrame.pixels:bot.pixels,to=transition.to===0?infoFrame.pixels:bot.pixels;pixels=composeTransition(from,to,Math.min(1,transition.elapsed/450),transition.effect);}
+  paint($('main-screen'),pixels);paint($('native-screen'),pixels);paint($('bot-preview'),bot.pixels);
+  const page=transition?transition.to:playback.page,isBot=page===1;
+  $('main-screen').dataset.page=transition?'transition':isBot?'bot':'info';
+  $('bot-preview').dataset.expression=bot.expression;
+  $('active-title').textContent=transition?'切页中…':isBot?'第 2 页 · Bot 动画':`第 1 页 · ${PLANS[active].name}`;
+  $('page-info').setAttribute('aria-pressed',String(page===0));$('page-bot').setAttribute('aria-pressed',String(isBot));
+  $('playback-toggle').setAttribute('aria-pressed',String(!playback.running));$('playback-toggle').textContent=playback.running?'暂停播放':'继续播放';
+  $('page-caption').textContent=`${isBot?'Bot 动画':'信息页'} · 停留 ${holdDuration(page)/1000} 秒`;
+  $('page-progress').style.width=transition?'100%':`${Math.min(100,playback.elapsed/holdDuration(page)*100)}%`;
+  $('page-countdown').textContent=!playback.running?'已暂停':transition?'转场中':!$('auto-loop').checked?'手动切页':`${Math.max(0,(holdDuration(page)-playback.elapsed)/1000).toFixed(1)} 秒后切页`;
+  $('stage-note').textContent=isBot?`${expressionNames[bot.expression]} · 眨眼、观察和弹性形变`:`${PLANS[active].name} · ${$('alignment').value==='center'?'居中对齐':'左对齐'}`;
+  $('main-screen').setAttribute('aria-label',isBot?'第二页：Grok Bot 风格的黑白点阵动画':`第一页：One-KVM，IP ${infoFrame.rows[1].text}，时间 ${infoFrame.rows[2].text}`);
+  $('result').classList.toggle('warning',!isBot&&infoFrame.overflow.length>0);
+  $('result-title').textContent=isBot?'第二页正在播放 Bot 动画':infoFrame.overflow.length?'文字超出屏幕，右侧内容会被截断':'三行信息都在屏幕范围内';
+  $('result-detail').textContent=isBot?'白色圆润轮廓与两只黑色胶囊眼睛，所有动画仍是 128×64 单色像素。':active==='mixed'?'标题和时间使用 20 像素高字体；IP 使用 13 像素高粗体，最长 IPv4 占 120 像素。':`标题 / IP / 时间字体高度：${infoFrame.rows.map(r=>r.font.h).join(' / ')} 像素。`;
+}
+function update(){
+  for(const id of Object.keys(PLANS)){
+    // 第一项始终保留设备原来的左对齐小字，作为比较基准。
+    const frame=render(id,id==='current');
+    paint(document.querySelector(`[data-screen="${id}"]`),frame.pixels);
+    const fit=document.querySelector(`[data-fit="${id}"]`),w=frame.rows[1].width;
+    fit.textContent=w>128?`IP 需 ${w} 像素，右侧超出 ${w-128} 像素`:`IP 占 ${w} / 128 像素，可完整显示`;
+    fit.classList.toggle('warn',w>128);
+    document.querySelector(`[data-plan="${id}"]`).setAttribute('aria-pressed',String(id===active));
+  }
+  infoFrame=render(active);
+  $('params').textContent=infoFrame.rows.map((r,i)=>`${['标题','IP','时间'][i]}：${r.font.rust}\n      Point::new(${r.x}, ${r.y}) · Baseline::Top · ${r.width} × ${r.font.h} 像素`).join('\n\n');
+  const ip=$('ip').value.trim();
+  const validIp=/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)&&ip.split('.').every(n=>Number(n)<=255);
+  $('ip-error').textContent=ip&&!validIp?'请输入 IPv4 地址，例如 192.168.1.100。':'';
+  $('ip').setAttribute('aria-invalid',String(!!ip&&!validIp));
+  const time=$('time').value.trim(),validTime=/^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(time);
+  $('time-error').textContent=time&&!validTime?'时间格式为 HH:MM:SS，例如 12:34:56。':'';
+  $('time').setAttribute('aria-invalid',String(!!time&&!validTime));
+  drawPlayback();
+}
+function scale(){const n=$('scale').value;$('device').style.setProperty('--zoom',n);$('scale-value').textContent=n+'×';}
+$('plans').addEventListener('click',event=>{const b=event.target.closest('[data-plan]');if(b){active=b.dataset.plan;if(active==='current')$('alignment').value='left';update();goToPage(0,false);}});
+$('ip').addEventListener('input',update);
+$('time').addEventListener('input',()=>{$('live').checked=false;update();});
+$('long-ip').addEventListener('click',()=>{$('ip').value='255.255.255.255';update();});
+$('alignment').addEventListener('change',update);
+$('scale').addEventListener('input',scale);
+$('grid').addEventListener('change',()=>{$('screen').classList.toggle('grid',$('grid').checked);});
+$('live').addEventListener('change',()=>{if($('live').checked)$('time').value=localTime();update();});
+$('page-info').addEventListener('click',()=>goToPage(0));
+$('page-bot').addEventListener('click',()=>goToPage(1));
+$('show-bot').addEventListener('click',()=>goToPage(1));
+$('playback-toggle').addEventListener('click',()=>{playback.running=!playback.running;drawPlayback();});
+for(const id of ['auto-loop','info-seconds','bot-seconds'])$(id).addEventListener('change',()=>{playback.elapsed=0;drawPlayback();});
+$('transition').addEventListener('change',()=>{if(playback.transition){playback.page=playback.transition.to;playback.transition=null;playback.elapsed=0;}drawPlayback();});
+$('bot-expression').addEventListener('change',drawPlayback);
+setInterval(()=>{if($('live').checked){$('time').value=localTime();update();}},2000);
+const availableWidth=document.querySelector('.preview-scroll').clientWidth;
+const deviceChrome=$('device').offsetWidth-$('main-screen').getBoundingClientRect().width;
+const defaultZoom=Math.max(1,Math.min(4,Math.floor((availableWidth-deviceChrome)/128)));
+$('auto-loop').checked=!reducedMotion;
+$('scale').value=defaultZoom;$('time').value=localTime();scale();update();
+let previousTick=performance.now(),previousPaint=0;
+function tick(now){
+  const delta=Math.min(200,now-previousTick);previousTick=now;
+  if(playback.running)advancePlayback(delta);
+  if(now-previousPaint>=1000/12){drawPlayback();previousPaint=now;}
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

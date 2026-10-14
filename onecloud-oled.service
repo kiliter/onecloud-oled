@@ -1,0 +1,15 @@
+[Unit]
+Description=玩客云 OLED 显示服务
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/onecloud-oled
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

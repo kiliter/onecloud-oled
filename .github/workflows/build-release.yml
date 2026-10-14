@@ -1,0 +1,119 @@
+name: 构建与发布
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    name: 测试与 ARMv7 静态构建
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: 获取源码
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: 核对标签与 Cargo 版本
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          version=$(awk '/^\[package\]/{in_package=1;next} /^\[/{in_package=0} in_package && /^version = /{gsub(/"/, "", $3);print $3;exit}' Cargo.toml)
+          test "$RELEASE_TAG" = "v$version"
+
+      - name: 格式、Clippy 与测试
+        run: |
+          docker run --rm \
+            --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/work" \
+            --workdir /work \
+            --env CARGO_HOME=/work/target/cargo-home \
+            rust:1.90-bookworm sh -eu -c '
+              rustup component add rustfmt clippy
+              cargo fmt --check
+              cargo clippy --all-targets --locked -- -D warnings
+              cargo test --locked
+            '
+
+      - name: 构建安装包与校验文件
+        run: sh scripts/build-armv7.sh
+
+      - name: 检查归档与 ARMv7 二进制
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user
+          version=$(awk '/^\[package\]/{in_package=1;next} /^\[/{in_package=0} in_package && /^version = /{gsub(/"/, "", $3);print $3;exit}' Cargo.toml)
+          package="onecloud-oled-armv7-v$version"
+          (cd dist && sha256sum -c "$package.tar.gz.sha256")
+          mkdir -p target/package-check
+          tar -xzf "dist/$package.tar.gz" -C target/package-check
+          (cd "target/package-check/$package" && sha256sum -c SHA256SUMS)
+          file "target/package-check/$package/onecloud-oled" | tee target/elf-info.txt
+          grep -q 'ARM' target/elf-info.txt
+          grep -q 'statically linked' target/elf-info.txt
+          binary="target/package-check/$package/onecloud-oled"
+          test "$(qemu-arm "$binary" --version)" = "onecloud-oled $version"
+          if qemu-arm "$binary" --gpio /dev/onecloud-oled-test-missing 17 11; then
+            printf '缺少 GPIO 时程序应当非零退出。\n' >&2
+            exit 1
+          fi
+
+      - name: 保存安装包
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ARMv7-安装包
+          path: |
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  release:
+    name: 发布 GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: 获取发布说明
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: 获取已经验证的安装包
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ARMv7-安装包
+          path: dist
+
+      - name: 上传资产并发布
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          sed "s/__VERSION__/${RELEASE_TAG#v}/g" .github/RELEASE_NOTES.md > "$RUNNER_TEMP/release-notes.md"
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft > "$RUNNER_TEMP/is-draft" 2>/dev/null; then
+            if grep -qx false "$RUNNER_TEMP/is-draft"; then
+              printf '该标签已发布，跳过重复发布。\n'
+              exit 0
+            fi
+            gh release upload "$RELEASE_TAG" dist/*.tar.gz dist/*.tar.gz.sha256 --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+          else
+            gh release create "$RELEASE_TAG" dist/*.tar.gz dist/*.tar.gz.sha256 --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest

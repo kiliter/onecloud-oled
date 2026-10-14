@@ -1,0 +1,17 @@
+[package]
+name = "onecloud-oled"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+ssd1306 = "0.10"
+embedded-graphics = "0.8"
+embedded-hal = "1"
+linux-embedded-hal = { version = "0.4", default-features = false, features = ["i2c", "gpio_cdev"] }
+bitbang-hal-ng = "0.5"
+local-ip-address = "0.6"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+
+[profile.release]
+strip = true
+lto = "thin"
